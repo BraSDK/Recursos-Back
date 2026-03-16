@@ -8,11 +8,27 @@ class Empleado extends Model
 {
     protected $table = 'empleados';
 
+    // CAMPOS QUE SE PUEDEN LLENAR MASIVAMENTE
+    protected $fillable = [
+        'user_id',
+        'puesto_id',
+        'dni',
+        'nombres',
+        'apellidos',
+        'fecha_ingreso',
+        'jefe_id',
+        'estado',
+    ];
+
     public function puesto() {
         return $this->belongsTo(Puesto::class);
     }
 
     public function jefe() {
         return $this->belongsTo(Empleado::class, 'jefe_id');
+    }
+
+    public function user() {
+        return $this->belongsTo(User::class);
     }
 }

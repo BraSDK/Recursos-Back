@@ -8,6 +8,30 @@ use Illuminate\Support\Facades\DB;
 
 class EmpleadoService
 {
+
+    public function createEmpleado(array $data)
+    {
+        return DB::transaction(function () use ($data) {
+            // 1. Crear el usuario para el sistema
+            $user = User::create([
+                'name' => $data['nombres'] . ' ' . $data['apellidos'],
+                'email' => $data['email'],
+                'password' => bcrypt($data['dni']), // Password por defecto es su DNI
+            ]);
+
+            // 2. Crear el registro de empleado
+            return Empleado::create([
+                'user_id' => $user->id,
+                'puesto_id' => $data['puesto_id'],
+                'dni' => $data['dni'],
+                'nombres' => $data['nombres'],
+                'apellidos' => $data['apellidos'],
+                'fecha_ingreso' => now(),
+                'estado' => 'activo',
+            ]);
+        });
+    }
+
     public function updateEmpleado($id, array $data)
     {
         return DB::transaction(function () use ($id, $data) {

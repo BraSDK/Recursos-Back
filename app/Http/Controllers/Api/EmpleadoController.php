@@ -34,39 +34,32 @@ class EmpleadoController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validar los datos que vienen de React
-        $request->validate([
+        // 1. Validar
+        $validated = $request->validate([
             'dni' => 'required|unique:empleados,dni',
-            'nombres' => 'required|string',
-            'apellidos' => 'required|string',
+            'nombres' => 'required|string|max:255',
+            'apellidos' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'puesto_id' => 'required|exists:puestos,id',
             'fecha_ingreso' => 'required|date',
+            'jefe_id' => 'nullable|exists:empleados,id',
         ]);
 
-        // 2. Crear el Usuario primero (para obtener el user_id)
-        $user = \App\Models\User::create([
-            'name' => $request->nombres . ' ' . $request->apellidos,
-            'email' => $request->email,
-            'password' => bcrypt($request->dni), // Contraseña por defecto es su DNI
-        ]);
+        try {
+            // 2. Ejecutar lógica a través del servicio
+            $empleado = $this->empleadoService->createEmpleado($validated);
 
-        // 3. Crear el Empleado vinculado al usuario
-        $empleado = Empleado::create([
-            'user_id' => $user->id,
-            'puesto_id' => $request->puesto_id,
-            'dni' => $request->dni,
-            'nombres' => $request->nombres,
-            'apellidos' => $request->apellidos,
-            'fecha_ingreso' => $request->fecha_ingreso,
-            'jefe_id' => $request->jefe_id, // Puede ser null
-            'estado' => 'activo'
-        ]);
-
-        return response()->json([
-            'message' => 'Empleado creado exitosamente',
-            'data' => $empleado->load('puesto')
-        ], 201);
+            return response()->json([
+                'message' => 'Empleado creado exitosamente',
+                'data' => $empleado
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al crear el empleado',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -92,8 +85,10 @@ class EmpleadoController extends Controller
         $validatedData = $request->validate([
             'nombres' => 'sometimes|string|max:255',
             'apellidos' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . Empleado::findOrFail($id)->user_id, // Evita error de duplicado con el mismo usuario
             'puesto_id' => 'sometimes|exists:puestos,id',
             'estado' => 'sometimes|in:activo,inactivo',
+            'fecha_ingreso' => 'sometimes|date',
         ]);
 
         $empleado = $this->empleadoService->updateEmpleado($id, $validatedData);
