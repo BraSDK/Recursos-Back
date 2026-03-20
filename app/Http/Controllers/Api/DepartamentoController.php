@@ -3,17 +3,26 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Departamento;
+use App\Services\DepartamentoService;
 use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
 {
+
+    protected $DepartamentoService;
     /**
      * Display a listing of the resource.
      */
+
+    public function __construct(DepartamentoService $DepartamentoService)
+    {
+        $this->DepartamentoService = $DepartamentoService;
+    }
+
     public function index()
     {
-        return response()->json(Departamento::all(), 200);
+        $departamentos = $this->DepartamentoService->getAllDepartamentos();
+        return response()->json($departamentos);
     }
 
     /**
@@ -22,12 +31,12 @@ class DepartamentoController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'codigo_dep' => 'required|string|unique:departamentos'
+            'nombre_departamento' => 'required|string|max:255',
+            'codigo_dep' => 'required|string|max:255'
         ]);
 
-        $departamento = Departamento::create($validated);
-        return response()->json($departamento, 201);
+        $departamentos = $this->DepartamentoService->createDepartamento($validated);
+        return response()->json($departamentos, 201);
     }
 
     /**
@@ -35,9 +44,7 @@ class DepartamentoController extends Controller
      */
     public function show(string $id)
     {
-        $dep = Departamento::find($id);
-        if (!$dep) return response()->json(['message' => 'No encontrado'], 404);
-        return response()->json($dep);
+        //
     }
 
     /**
@@ -45,7 +52,13 @@ class DepartamentoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'nombre_departamento' => 'sometimes|string|max:255',
+            'codigo_dep' => 'sometimes|string|max:255'
+        ]);
+    
+        $departamento = $this->DepartamentoService->updateDepartamento($id, $validated);
+        return response()->json($departamento);
     }
 
     /**
@@ -53,6 +66,7 @@ class DepartamentoController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $this->DepartamentoService->deleteDepartamento($id);
+        return response()->json(['message' => 'Departamento eliminado correctamente']);
     }
 }
