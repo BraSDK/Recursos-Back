@@ -16,9 +16,9 @@ class PostulanteService
         return Postulante::with(['puesto', 'procesosSeleccion'])->latest()->get();
     }
 
-    public function registrarPostulacion(array $data, $fotoFile = null)
+    public function registrarPostulacion(array $data, $fotoFile = null, $cv = null)
     {
-        return DB::transaction(function () use ($data, $fotoFile) {
+        return DB::transaction(function () use ($data, $fotoFile, $cv) {
             
             // 1. Lógica de Detección de Reingreso
             $empleadoAnterior = Empleado::where('dni', $data['dni'])->first();
@@ -41,9 +41,16 @@ class PostulanteService
                 $fotoPath = $fotoFile->store('postulantes/fotos', 'public');
             }
 
+            $hojaPath = null;
+            if ($cv) {
+                // Guardamos el CV en una carpeta privada o pública
+                $hojaPath = $cv->store('postulantes/cvs', 'public');
+            }
+
             // 3. Crear el registro con todos los campos
             return Postulante::create(array_merge($data, [
                 'foto_path' => $fotoPath,
+                'cv_path' => $hojaPath,
                 'es_reingreso' => $esReingreso,
                 'comentarios_reclutador' => $comentarios,
                 'estado_proceso' => 'reclutamiento'
@@ -90,6 +97,44 @@ class PostulanteService
                 'fecha_evaluacion' => now()->format('Y-m-d H:i:s')
             ]);
         });
+    }
+
+    public function actualizarInformacion($id, array $datos)
+    {
+        $postulante = Postulante::findOrFail($id);
+
+        // LOGICA PROFESIONAL DE INTEGRIDAD:
+        // Si el nuevo estado es 'reclutamiento', borramos sus asistencias
+        if (isset($datos['estado_proceso']) && $datos['estado_proceso'] === 'reclutamiento') {
+            // Borramos físicamente los registros de la tabla procesos_seleccions
+            $postulante->procesosSeleccion()->delete();
+        }
+        
+        // Actualizamos los datos validados
+        $postulante->update($datos);
+
+        // Retornamos el objeto con sus relaciones cargadas si es necesario para el Front
+        return $postulante->load('procesosSeleccion');
+    }
+
+    public function actualizarFotoPostulante($id, $archivo)
+    {
+        $postulante = Postulante::findOrFail($id);
+
+        // 1. Si ya tenía una foto anterior, la borramos para no llenar el servidor de basura
+        if ($postulante->foto_path && Storage::disk('public')->exists($postulante->foto_path)) {
+            Storage::disk('public')->delete($postulante->foto_path);
+        }
+
+        // 2. Guardamos la nueva foto en la carpeta 'postulantes/fotos'
+        $path = $archivo->store('postulantes/fotos', 'public');
+
+        // 3. Actualizamos la base de datos
+        $postulante->update([
+            'foto_path' => $path
+        ]);
+
+        return $postulante;
     }
 
     public function anularProgresoDiario($id, $numDia)

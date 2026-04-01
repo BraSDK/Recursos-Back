@@ -33,3 +33,6 @@ Route::put('postulantes/{id}/asistencia', [PostulanteController::class, 'updateA
 
 // Esta es personalizada para la lógica de anular
 Route::delete('postulantes/{id}/asistencia', [PostulanteController::class, 'destroyAsistencia']);
+
+// Ruta para actualizar la foto del postulante (la que usaremos en PostulanteForm.jsx)
+Route::post('postulantes/{id}/foto', [PostulanteController::class, 'updateFotoPostulante']);

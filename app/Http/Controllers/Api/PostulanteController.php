@@ -40,6 +40,7 @@ class PostulanteController extends Controller
             'puesto_id' => 'required|exists:puestos,id',
             'dni' => 'required|string|unique:postulantes,dni',
             'nombres' => 'required|string',
+            'cv' => 'nullable|file|mimes:pdf|max:5120', // PDF máximo 5MB
             'apellido_paterno' => 'required|string',
             'apellido_materno' => 'required|string',
             'edad' => 'required|integer',
@@ -104,6 +105,48 @@ class PostulanteController extends Controller
         
         return response()->json([
             'message' => 'Asistencia actualizada correctamente',
+            'postulante' => $postulante
+        ]);
+    }
+
+    public function updateFotoPostulante(Request $request, $id)
+    {
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
+        ]);
+
+        $postulante = $this->postulanteService->actualizarFotoPostulante($id, $request->file('foto'));
+
+        return response()->json([
+            'message' => 'Foto actualizada correctamente',
+            'foto_path' => $postulante->foto_path
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        // 1. Validación (Mantenemos tu lógica de DNI único exceptuando al ID actual)
+        $validated = $request->validate([
+            'nombres' => 'string|max:255',
+            'apellido_paterno' => 'string|max:255',
+            'apellido_materno' => 'string|max:255',
+            'dni' => 'string|max:20|unique:postulantes,dni,' . $id,
+            'celular' => 'string|max:20',
+            'direccion' => 'string|max:255',
+            'horario_interes' => 'string',
+            'estado_proceso' => 'string',
+            'es_reingreso' => 'boolean',
+            'comentarios_reclutador' => 'nullable|string',
+            'enfermedades_alergias' => 'nullable|string',
+            'emergencia_nombre' => 'string',
+            'emergencia_telefono' => 'string',
+        ]);
+
+        // 2. Delegamos al Service
+        $postulante = $this->postulanteService->actualizarInformacion($id, $validated);
+
+        return response()->json([
+            'message' => 'Postulante actualizado correctamente',
             'postulante' => $postulante
         ]);
     }
