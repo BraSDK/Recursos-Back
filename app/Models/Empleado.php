@@ -11,6 +11,7 @@ class Empleado extends Model
     // CAMPOS QUE SE PUEDEN LLENAR MASIVAMENTE
     protected $fillable = [
         'user_id',
+        'postulante_id',
         'puesto_id',
         'dni',
         'nombres',
@@ -30,5 +31,10 @@ class Empleado extends Model
 
     public function user() {
         return $this->belongsTo(User::class);
+    }
+
+    public function vacaciones()
+    {
+        return $this->hasMany(PeriodoVacacional::class);
     }
 }

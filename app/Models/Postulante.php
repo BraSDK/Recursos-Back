@@ -11,7 +11,7 @@ class Postulante extends Model
     protected $table = 'postulantes';
 
     protected $fillable = [
-        'puesto_id', 'foto_path', 'apellido_paterno', 'apellido_materno', 'nombres', 
+        'puesto_id', 'foto_path', 'cv_path', 'apellido_paterno', 'apellido_materno', 'nombres', 
         'dni', 'edad', 'estado_civil', 'ubigeo_dep_prov', 'distrito', 'fecha_nacimiento', 
         'sexo', 'direccion', 'telefono_fijo', 'celular', 'email', 
         'formacion_academica', 'experiencia_laboral', 'tiene_hijos', 'cantidad_hijos', 
@@ -51,6 +51,6 @@ class Postulante extends Model
      */
     public function empleado()
     {
-        return $this->hasOne(Empleado::class);
+        return $this->hasOne(Empleado::class, 'postulante_id');
     }
 }

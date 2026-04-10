@@ -24,7 +24,7 @@ class EmpleadoController extends Controller
     public function index()
     {
         // Cargamos al empleado con su puesto y el departamento de ese puesto
-        $empleados = Empleado::with(['puesto.departamento', 'jefe'])->get();
+        $empleados = Empleado::with(['puesto.departamento', 'jefe', 'user', 'vacaciones' ])->get();
         
         return response()->json($empleados);
     }
@@ -43,6 +43,7 @@ class EmpleadoController extends Controller
             'puesto_id' => 'required|exists:puestos,id',
             'fecha_ingreso' => 'required|date',
             'jefe_id' => 'nullable|exists:empleados,id',
+            'postulante_id' => 'nullable|exists:postulantes,id',
         ]);
 
         try {
@@ -87,12 +88,33 @@ class EmpleadoController extends Controller
             'apellidos' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . Empleado::findOrFail($id)->user_id, // Evita error de duplicado con el mismo usuario
             'puesto_id' => 'sometimes|exists:puestos,id',
-            'estado' => 'sometimes|in:activo,inactivo',
+            'estado' => 'sometimes|in:activo,inactivo,vacaciones',
             'fecha_ingreso' => 'sometimes|date',
         ]);
 
         $empleado = $this->empleadoService->updateEmpleado($id, $validatedData);
         return response()->json($empleado);
+    }
+
+    public function cesar(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'motivo_cese'   => 'required|string|max:255',
+            'observaciones' => 'required|string',
+            'recontratable' => 'required|boolean',
+            'fecha_salida'  => 'required|date',
+        ]);
+
+        try {
+            $empleado = $this->empleadoService->darDeBaja($id, $validated);
+            
+            return response()->json([
+                'message' => 'Empleado cesado correctamente y registrado en historial',
+                'empleado' => $empleado
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

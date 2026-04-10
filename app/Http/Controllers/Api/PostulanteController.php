@@ -73,7 +73,7 @@ class PostulanteController extends Controller
         }
 
         // 5. Llamada al Service
-        $postulante = $this->postulanteService->registrarPostulacion($validated, $request->file('foto'));
+        $postulante = $this->postulanteService->registrarPostulacion($validated, $request->file('foto'), $request->file('cv'));
 
         return response()->json([
             'message' => 'Ficha de postulación enviada correctamente.',
@@ -149,6 +149,22 @@ class PostulanteController extends Controller
             'message' => 'Postulante actualizado correctamente',
             'postulante' => $postulante
         ]);
+    }
+
+    public function getPendientes()
+    {
+        // Llamamos al service que filtra por estado 'gestion' y sin empleado
+        $pendientes = $this->postulanteService->getPendientesContratacion();
+        return response()->json($pendientes);
+    }
+
+    /**
+     * Obtiene la data lista para autocompletar el formulario de empleado.
+     */
+    public function getPreAlta($id)
+    {
+        $data = $this->postulanteService->getDatosParaAlta($id);
+        return response()->json($data);
     }
 
     public function destroyAsistencia(Request $request, $id)

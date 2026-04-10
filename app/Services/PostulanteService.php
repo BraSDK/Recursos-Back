@@ -63,6 +63,31 @@ class PostulanteService
         return Postulante::with(['puesto', 'procesosSeleccion'])->findOrFail($id);
     }
 
+    public function getDatosParaAlta($id) 
+    {
+        $postulante = Postulante::with('puesto')->findOrFail($id);
+        
+        return [
+            'postulante_id' => $postulante->id,
+            'nombres' => $postulante->nombres,
+            'apellidos' => $postulante->apellido_paterno . ' ' . $postulante->apellido_materno,
+            'dni' => $postulante->dni,
+            'email_personal' => $postulante->email,
+            'puesto_id' => $postulante->puesto_id,
+            'nombre_puesto' => $postulante->puesto->nombre_puesto
+        ];
+    }
+
+    public function getPendientesContratacion()
+    {
+        // Supongamos que 'gestion' es el estado cuando ya pasaron todo pero falta crearle ficha
+        // O puedes usar un nuevo estado llamado 'aprobado'
+        return Postulante::with('puesto')
+            ->where('estado_proceso', 'gestion')
+            ->whereDoesntHave('empleado') // Solo si no tienen ficha de empleado creada
+            ->get();
+    }
+
     public function actualizarProgresoDiario($id, array $progreso)
     {
         return DB::transaction(function () use ($id, $progreso) {

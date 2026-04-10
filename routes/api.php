@@ -1,38 +1,37 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\{
+    DepartamentoController,
+    PostulanteController,
+    EmpleadoController,
+    PuestoController
+};
 
-use App\Http\Controllers\Api\DepartamentoController;
-use App\Http\Controllers\Api\PostulanteController;
-use App\Http\Controllers\Api\EmpleadoController;
-use App\Http\Controllers\Api\PuestoController;
-
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-// Rutas para departamentos
+// 1. Recursos Simples
 Route::apiResource('departamentos', DepartamentoController::class);
-
-// Rutas para puestos
 Route::apiResource('puestos', PuestoController::class);
 
-// Rutas para empleados
-Route::apiResource('empleados', EmpleadoController::class);
+// 2. Grupo de Empleados (Agrupamos por prefijo)
+Route::prefix('empleados')->group(function () {
+    Route::post('{id}/cesar', [EmpleadoController::class, 'cesar']);
+    Route::apiResource('/', EmpleadoController::class)->parameters(['' => 'empleado']);
+});
 
-// Ruta tipo Resource para el resto (index, show, etc.)
-Route::apiResource('postulantes', PostulanteController::class);
+// 3. Grupo de Postulantes (Más organizado)
+Route::prefix('postulantes')->group(function () {
+    // Procesos de Contratación (Campanita)
+    Route::get('pendientes-alta', [PostulanteController::class, 'getPendientes']);
+    Route::get('{id}/pre-alta', [PostulanteController::class, 'getPreAlta']);
+    
+    // Gestión de Asistencia y Foto
+    Route::put('{id}/asistencia', [PostulanteController::class, 'updateAsistencia']);
+    Route::delete('{id}/asistencia', [PostulanteController::class, 'destroyAsistencia']);
+    Route::post('{id}/foto', [PostulanteController::class, 'updateFotoPostulante']);
+    
+    // Recurso base
+    Route::apiResource('/', PostulanteController::class)->parameters(['' => 'postulante']);
+});
 
-// Ruta Pública para el Formulario
+// 4. Rutas Públicas
 Route::post('public/postular', [PostulanteController::class, 'store']);
-
-// Ruta para actualizar asistencia (la que usaremos en Reclutamiento.jsx)
-Route::put('postulantes/{id}/asistencia', [PostulanteController::class, 'updateAsistencia']);
-
-// Esta es personalizada para la lógica de anular
-Route::delete('postulantes/{id}/asistencia', [PostulanteController::class, 'destroyAsistencia']);
-
-// Ruta para actualizar la foto del postulante (la que usaremos en PostulanteForm.jsx)
-Route::post('postulantes/{id}/foto', [PostulanteController::class, 'updateFotoPostulante']);
