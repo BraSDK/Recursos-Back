@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{
+    PreSeleccionController,
     DepartamentoController,
     PostulanteController,
     EmpleadoController,
@@ -9,8 +10,8 @@ use App\Http\Controllers\Api\{
 };
 
 // 1. Recursos Simples
+Route::apiResource('pre-selecciones', PreSeleccionController::class);
 Route::apiResource('departamentos', DepartamentoController::class);
-Route::apiResource('puestos', PuestoController::class);
 
 // 2. Grupo de Empleados (Agrupamos por prefijo)
 Route::prefix('empleados')->group(function () {
@@ -33,5 +34,15 @@ Route::prefix('postulantes')->group(function () {
     Route::apiResource('/', PostulanteController::class)->parameters(['' => 'postulante']);
 });
 
-// 4. Rutas Públicas
-Route::post('public/postular', [PostulanteController::class, 'store']);
+// 4. Grupo de Puesto (Más organizado)
+Route::prefix('puestos')->group(function () {
+    Route::get('departamento/{id}', [PuestoController::class, 'getByDepartamento']);
+    Route::apiResource('/', PuestoController::class)->parameters(['' => 'puesto']);
+});
+
+// 5. Rutas Públicas
+Route::prefix('public')->group(function () {
+    Route::post('postular', [PostulanteController::class, 'store']);
+    // Nuevo endpoint para validar antes de mostrar el formulario
+    Route::get('verificar-dni/{dni}', [PreSeleccionController::class, 'verificarDniPublico']);
+});

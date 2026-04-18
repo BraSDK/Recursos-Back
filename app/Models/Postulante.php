@@ -17,7 +17,7 @@ class Postulante extends Model
         'formacion_academica', 'experiencia_laboral', 'tiene_hijos', 'cantidad_hijos', 
         'esta_embarazada', 'emergencia_nombre', 'emergencia_parentesco', 
         'emergencia_telefono', 'enfermedades_alergias', 'motivo_laborar', 
-        'horario_interes', 'estado_proceso', 'es_reingreso', 'comentarios_reclutador'
+        'horario_interes', 'salario_sugerido', 'estado_proceso', 'es_reingreso', 'comentarios_reclutador'
     ];
 
     // Esto es CRÍTICO para manejar los datos del formulario móvil
@@ -33,9 +33,10 @@ class Postulante extends Model
     /**
      * Relación con el Puesto al que postula
      */
+    // Relación para obtener el nombre del puesto
     public function puesto(): BelongsTo
     {
-        return $this->belongsTo(Puesto::class);
+        return $this->belongsTo(Puesto::class, 'puesto_id');
     }
 
     /**

@@ -16,6 +16,7 @@ class DepartamentoService
         return Departamento::create([
             'nombre' => $data['nombre_departamento'],
             'codigo_dep' => $data['codigo_dep'],
+            'area_general' => $data['area_general'],
         ]);
     }
 
@@ -28,7 +29,9 @@ class DepartamentoService
             // Usamos ?? para mantener el valor actual si no viene en el request
             'nombre' => $data['nombre_departamento'] ?? $departamento->nombre,
             'codigo_dep' => $data['codigo_dep'] ?? $departamento->codigo_dep,
+            'area_general' => $data['area_general'] ?? $departamento->area_general,
         ]);
+
 
         return $departamento;
     }

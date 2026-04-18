@@ -18,9 +18,19 @@ class PuestoController extends Controller
         $this->puestoService = $puestoService;
     }
  
-    public function index()
+    public function index(Request $request)
     {
-        $puestos = $this->puestoService->getAllPuestos();
+        $search = $request->query('search');
+        $departamentoId = $request->query('departamento_id');
+
+        $puestos = $this->puestoService->getAllPuestos($search, $departamentoId);
+        
+        return response()->json($puestos);
+    }
+
+    public function getByDepartamento($depId)
+    {
+        $puestos = $this->puestoService->getPuestosPorDepartamento($depId);
         return response()->json($puestos);
     }
 
@@ -52,7 +62,18 @@ class PuestoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'nombre_puesto'   => 'sometimes|required|string|max:255',
+            'departamento_id' => 'sometimes|required|exists:departamentos,id',
+            'salario_base'    => 'sometimes|nullable|numeric'
+        ]);
+    
+        $puesto = $this->puestoService->updatePuesto($id, $validated);
+    
+        return response()->json([
+            'message' => 'Puesto actualizado correctamente',
+            'data' => $puesto
+        ]);
     }
 
     /**
@@ -60,6 +81,10 @@ class PuestoController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $this->puestoService->deletePuesto($id);
+    
+        return response()->json([
+            'message' => 'Puesto eliminado correctamente'
+        ]);
     }
 }

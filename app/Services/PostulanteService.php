@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Postulante;
 use App\Models\Empleado;
+use App\Models\PreSeleccion;
 use App\Models\HistorialCese;
 use App\Models\ProcesoSeleccion;
 use Illuminate\Support\Facades\DB;
@@ -20,41 +21,41 @@ class PostulanteService
     {
         return DB::transaction(function () use ($data, $fotoFile, $cv) {
             
-            // 1. Lógica de Detección de Reingreso
-            $empleadoAnterior = Empleado::where('dni', $data['dni'])->first();
-            $esReingreso = false;
-            $comentarios = null;
+        // 1. Lógica de Detección de Reingreso
+        $empleadoAnterior = Empleado::where('dni', $data['dni'])->first();
+        $esReingreso = false;
+        $comentarios = null;
 
-            if ($empleadoAnterior) {
-                $esReingreso = true;
-                $cese = HistorialCese::where('empleado_id', $empleadoAnterior->id)->first();
-                
-                $status = ($cese && !$cese->recontratable) ? "⚠️ NO RECONTRATABLE" : "✅ RECONTRATABLE";
-                $motivo = $cese ? $cese->motivo_cese : "No registrado";
-                
-                $comentarios = "ALERTA DE REINGRESO: Ex-empleado. Motivo cese: {$motivo}. Status: {$status}.";
-            }
+        if ($empleadoAnterior) {
+            $esReingreso = true;
+            $cese = HistorialCese::where('empleado_id', $empleadoAnterior->id)->first();
+            
+            $status = ($cese && !$cese->recontratable) ? "⚠️ NO RECONTRATABLE" : "✅ RECONTRATABLE";
+            $motivo = $cese ? $cese->motivo_cese : "No registrado";
+            
+            $comentarios = "ALERTA DE REINGRESO: Ex-empleado. Motivo cese: {$motivo}. Status: {$status}.";
+        }
 
-            // 2. Manejo de la Foto (si existe)
-            $fotoPath = null;
-            if ($fotoFile) {
-                $fotoPath = $fotoFile->store('postulantes/fotos', 'public');
-            }
+        // 2. Manejo de Archivos
+        $fotoPath = $fotoFile ? $fotoFile->store('postulantes/fotos', 'public') : null;
+        $hojaPath = $cv ? $cv->store('postulantes/cvs', 'public') : null;
 
-            $hojaPath = null;
-            if ($cv) {
-                // Guardamos el CV en una carpeta privada o pública
-                $hojaPath = $cv->store('postulantes/cvs', 'public');
-            }
+        // 3. Crear el registro del Postulante
+        $postulante = Postulante::create(array_merge($data, [
+            'foto_path' => $fotoPath,
+            'cv_path' => $hojaPath,
+            'es_reingreso' => $esReingreso,
+            'comentarios_reclutador' => $comentarios,
+            'estado_proceso' => 'reclutamiento'
+        ]));
 
-            // 3. Crear el registro con todos los campos
-            return Postulante::create(array_merge($data, [
-                'foto_path' => $fotoPath,
-                'cv_path' => $hojaPath,
-                'es_reingreso' => $esReingreso,
-                'comentarios_reclutador' => $comentarios,
-                'estado_proceso' => 'reclutamiento'
-            ]));
+            // 4. ACTUALIZACIÓN DE PRE-SELECCIÓN
+            // Marcamos como completado solo si existe una invitación pendiente para este DNI
+            PreSeleccion::where('dni', $data['dni'])
+                ->where('estado', 'pendiente')
+                ->update(['estado' => 'completado']);
+
+            return $postulante;
         });
     }
 

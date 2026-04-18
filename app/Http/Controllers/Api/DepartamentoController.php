@@ -32,7 +32,8 @@ class DepartamentoController extends Controller
     {
         $validated = $request->validate([
             'nombre_departamento' => 'required|string|max:255',
-            'codigo_dep' => 'required|string|max:255'
+            'codigo_dep' => 'required|string|max:255',
+            'area_general' => 'required|in:ventas,administrativo,operaciones'
         ]);
 
         $departamentos = $this->DepartamentoService->createDepartamento($validated);
@@ -54,7 +55,8 @@ class DepartamentoController extends Controller
     {
         $validated = $request->validate([
             'nombre_departamento' => 'sometimes|string|max:255',
-            'codigo_dep' => 'sometimes|string|max:255'
+            'codigo_dep' => 'sometimes|string|max:255',
+            'area_general' => 'sometimes|in:ventas,administrativo,operaciones'
         ]);
     
         $departamento = $this->DepartamentoService->updateDepartamento($id, $validated);

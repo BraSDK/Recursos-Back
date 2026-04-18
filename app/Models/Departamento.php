@@ -11,6 +11,7 @@ class Departamento extends Model
     // ¡Añade esto! Sin esto, Laravel no deja guardar datos
     protected $fillable = [
         'nombre',
-        'codigo_dep'
+        'codigo_dep',
+        'area_general'
     ];
 }
