@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{
+    GrupoCapacitacionController,
     PreSeleccionController,
     DepartamentoController,
     PostulanteController,
@@ -40,7 +41,16 @@ Route::prefix('puestos')->group(function () {
     Route::apiResource('/', PuestoController::class)->parameters(['' => 'puesto']);
 });
 
-// 5. Rutas Públicas
+// 5. Nuevo Grupo: Capacitación y Grupos
+Route::prefix('capacitacion')->group(function () {
+    // Ruta personalizada para la acción masiva (debe ir antes del resource)
+    Route::post('grupos/asignar', [GrupoCapacitacionController::class, 'asignar']);
+    
+    // apiResource maneja index, store, show, update, destroy automáticamente
+    Route::apiResource('grupos', GrupoCapacitacionController::class);
+});
+
+// 6. Rutas Públicas
 Route::prefix('public')->group(function () {
     Route::post('postular', [PostulanteController::class, 'store']);
     // Nuevo endpoint para validar antes de mostrar el formulario

@@ -15,10 +15,14 @@ class PostulanteController extends Controller
         $this->postulanteService = $postulanteService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $postulantes = $this->postulanteService->getAllPostulantes();
-        return response()->json($postulantes);
+        $search = $request->query('search');
+    
+        // Llamamos al servicio paginado
+        $data = $this->postulanteService->getPostulantesPaginados($search);
+        
+        return response()->json($data);
     }
 
     public function store(Request $request)

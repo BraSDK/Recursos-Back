@@ -17,6 +17,22 @@ class PostulanteService
         return Postulante::with(['puesto', 'procesosSeleccion'])->latest()->get();
     }
 
+    public function getPostulantesPaginados($search = null)
+    {
+        $query = Postulante::with(['puesto', 'procesosSeleccion']);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('dni', 'LIKE', "%{$search}%")
+                ->orWhere('nombres', 'LIKE', "%{$search}%")
+                ->orWhere('apellido_paterno', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Ordenamos y paginamos
+        return $query->latest()->paginate(10);
+    }
+
     public function registrarPostulacion(array $data, $fotoFile = null, $cv = null)
     {
         return DB::transaction(function () use ($data, $fotoFile, $cv) {
