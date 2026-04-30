@@ -19,7 +19,9 @@ class PostulanteService
 
     public function getPostulantesPaginados($search = null)
     {
-        $query = Postulante::with(['puesto', 'procesosSeleccion']);
+        $query = Postulante::with(['puesto.departamento', 'procesosSeleccion' => function($q) {
+            $q->latest(); 
+        }]);
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -60,6 +62,7 @@ class PostulanteService
         $postulante = Postulante::create(array_merge($data, [
             'foto_path' => $fotoPath,
             'cv_path' => $hojaPath,
+            'cv_fisico' => $data['cv_fisico'] ?? false,
             'es_reingreso' => $esReingreso,
             'comentarios_reclutador' => $comentarios,
             'estado_proceso' => 'reclutamiento'

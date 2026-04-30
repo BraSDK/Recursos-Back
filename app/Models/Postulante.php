@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Postulante extends Model
 {
     protected $table = 'postulantes';
+    protected $appends = ['area_general'];
 
     protected $fillable = [
-        'puesto_id', 'grupo_id','foto_path', 'cv_path', 'apellido_paterno', 'apellido_materno', 'nombres', 
+        'puesto_id', 'grupo_id','foto_path', 'cv_path', 'cv_fisico', 'apellido_paterno', 'apellido_materno', 'nombres', 
         'dni', 'edad', 'estado_civil', 'ubigeo_dep_prov', 'distrito', 'fecha_nacimiento', 
         'sexo', 'direccion', 'telefono_fijo', 'celular', 'email', 
         'formacion_academica', 'experiencia_laboral', 'tiene_hijos', 'cantidad_hijos', 
@@ -58,5 +59,10 @@ class Postulante extends Model
     public function grupo(): BelongsTo
     {
         return $this->belongsTo(GrupoCapacitacion::class, 'grupo_id');
+    }
+
+    public function getAreaGeneralAttribute()
+    {
+        return $this->puesto?->departamento?->area_general ?? 'ventas';
     }
 }

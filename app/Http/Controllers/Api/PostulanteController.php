@@ -32,6 +32,10 @@ class PostulanteController extends Controller
 
         // 2. Limpieza de Booleanos (Convertir strings "true"/"false" a booleanos reales)
         // Esto es necesario porque FormData envía todo como texto
+        // En tu método store del PostulanteController
+        if ($request->has('cv_fisico')) {
+            $inputs['cv_fisico'] = filter_var($request->cv_fisico, FILTER_VALIDATE_BOOLEAN);
+        }
         if ($request->has('tiene_hijos')) {
             $inputs['tiene_hijos'] = filter_var($request->tiene_hijos, FILTER_VALIDATE_BOOLEAN);
         }
