@@ -45,7 +45,8 @@ Route::prefix('puestos')->group(function () {
 Route::prefix('capacitacion')->group(function () {
     // Ruta personalizada para la acción masiva (debe ir antes del resource)
     Route::post('grupos/asignar', [GrupoCapacitacionController::class, 'asignar']);
-    
+    Route::get('grupos/calendario', [GrupoCapacitacionController::class, 'indexCalendario']);
+    Route::apiResource('grupos-capacitacion', GrupoCapacitacionController::class);
     // apiResource maneja index, store, show, update, destroy automáticamente
     Route::apiResource('grupos', GrupoCapacitacionController::class);
 });

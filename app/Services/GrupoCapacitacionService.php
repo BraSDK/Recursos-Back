@@ -44,6 +44,38 @@ class GrupoCapacitacionService
         return GrupoCapacitacion::where('estado', 'abierto')->latest()->get();
     }
 
+    public function getEventosCalendario()
+    {
+        $grupos = GrupoCapacitacion::all();
+
+        return $grupos->map(function($grupo) {
+            return [
+                'id'    => $grupo->id,
+                'title' => $grupo->nombre_grupo,
+                // Formato ISO8601 que FullCalendar ama
+                'start' => $grupo->fecha_capacitacion . 'T' . $grupo->hora_capacitacion,
+                'extendedProps' => [
+                    'area'   => $grupo->area_general,
+                    'estado' => $grupo->estado,
+                    'total_postulantes' => $grupo->postulantes()->count(), // Útil para el calendario
+                ],
+                'backgroundColor' => $this->getColorPorArea($grupo->area_general),
+                'borderColor'     => $this->getColorPorArea($grupo->area_general),
+                'textColor'       => '#ffffff',
+            ];
+        });
+    }
+
+    private function getColorPorArea($area)
+    {
+        return match($area) {
+            'ventas'         => '#4f46e5', // Indigo 600
+            'operaciones'    => '#10b981', // Emerald 500
+            'administracion' => '#f59e0b', // Amber 500
+            default          => '#6b7280', // Gray 500
+        };
+    }
+
     public function getGruposFiltrados(array $filtros)
     {
         $query = GrupoCapacitacion::query();
@@ -65,4 +97,22 @@ class GrupoCapacitacionService
                     ->orderBy('hora_capacitacion', 'asc')
                     ->get();
     }
+
+    public function actualizarGrupo($id, array $datos)
+    {
+        $grupo = GrupoCapacitacion::findOrFail($id);
+        $grupo->update($datos);
+        return $grupo;
+    }
+
+    public function eliminarGrupo($id)
+    {
+        $grupo = GrupoCapacitacion::findOrFail($id);
+        
+        // Opcional: Desvincular postulantes antes de borrar si no tienes cascade on delete
+        $grupo->postulantes()->update(['grupo_id' => null]);
+        
+        return $grupo->delete();
+    }
+
 }

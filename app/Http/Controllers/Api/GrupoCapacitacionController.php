@@ -24,6 +24,12 @@ class GrupoCapacitacionController extends Controller
         return response()->json($this->grupoCapacitacionService->getGruposFiltrados($filtros));
     }
 
+    public function indexCalendario()
+    {
+        $eventos = $this->grupoCapacitacionService->getEventosCalendario();
+        return response()->json($eventos);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -63,7 +69,16 @@ class GrupoCapacitacionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        
+        $validated = $request->validate([
+            'nombre_grupo'       => 'string|max:100',
+            'area_general'       => 'in:ventas,operaciones,administracion',
+            'fecha_capacitacion' => 'date',
+            'hora_capacitacion'  => 'string',
+            'estado'             => 'in:abierto,en_curso,finalizado',
+        ]);
+
+        $grupo = $this->grupoCapacitacionService->actualizarGrupo($id, $validated);
+        return response()->json($grupo);
     }
 
     /**
@@ -71,7 +86,8 @@ class GrupoCapacitacionController extends Controller
      */
     public function destroy(string $id)
     {
-
+        $this->grupoCapacitacionService->eliminarGrupo($id);
+        return response()->json(['message' => 'Grupo eliminado correctamente']);
     }
     
 }

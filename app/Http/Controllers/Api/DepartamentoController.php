@@ -19,9 +19,11 @@ class DepartamentoController extends Controller
         $this->DepartamentoService = $DepartamentoService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $departamentos = $this->DepartamentoService->getAllDepartamentos();
+        $search = $request->query('search');
+
+        $departamentos = $this->DepartamentoService->getDepartamentosPaginados($search);
         return response()->json($departamentos);
     }
 

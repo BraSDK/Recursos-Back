@@ -10,6 +10,21 @@ class DepartamentoService
     {
         return Departamento::all();
     }
+
+    public function getDepartamentosPaginados($search = null)
+    {
+        $query = Departamento::query();
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nombre', 'LIKE', "%{$search}%")
+                ->orWhere('codigo_dep', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Usamos paginate(10) para que devuelva el objeto con 'total' y 'last_page'
+        return $query->latest()->paginate(10);
+    }
     
     public function createDepartamento(array $data)
     {
