@@ -21,7 +21,9 @@ class PreSeleccionController extends Controller
         $estado = $request->query('estado', 'pendiente');
         $search = $request->query('search');
 
-        $data = $this->preSeleccionService->getPaginado($estado, $search);
+        $grupoId = $request->query('grupoId');
+
+        $data = $this->preSeleccionService->getPaginado($estado, $search, $grupoId);
         
         // Al usar paginate(), Laravel devuelve un objeto con: data, current_page, last_page, total, etc.
         return response()->json($data);

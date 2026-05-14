@@ -4,16 +4,76 @@ namespace App\Services;
 
 use App\Models\GrupoCapacitacion;
 use App\Models\Postulante;
+use App\Models\PreSeleccion;
 use App\Models\ProcesoSeleccion;
 use Illuminate\Support\Facades\DB;
 
 class GrupoCapacitacionService
 {
+    public function obtenerGrupoConPostulantes($id)
+    {
+        $grupo = GrupoCapacitacion::with(['postulantes', 'preSelecciones'])->findOrFail($id);
+
+        // Determinamos qué colección usar
+        $inscritos = ($grupo->tipo === 'preseleccion') 
+            ? $grupo->preSelecciones 
+            : $grupo->postulantes;
+
+        // Convertimos a array y añadimos manualmente la clave para evitar el error 500
+        $data = $grupo->toArray();
+        $data['inscritos'] = $inscritos;
+
+        return $data;
+    }
+
     public function crearGrupo(array $data)
     {
         return GrupoCapacitacion::create($data);
     }
 
+    public function asignarMasivo(int $grupoId, array $ids, string $tipo)
+    {
+        // 1. Buscamos el grupo (El Service maneja el modelo)
+        $grupo = GrupoCapacitacion::findOrFail($grupoId);
+
+        // 2. Validación de Integridad de Negocio
+        if ($grupo->tipo !== $tipo) {
+            throw new \InvalidArgumentException("Error: El grupo es de tipo '{$grupo->tipo}' y no puede recibir candidatos de tipo '{$tipo}'.");
+        }
+
+        // 3. Ejecución de la transacción
+        return DB::transaction(function () use ($grupo, $ids, $tipo) {
+            
+            if ($tipo === 'preseleccion') {
+                return PreSeleccion::whereIn('id', $ids)
+                    ->update(['grupo_id' => $grupo->id]);
+            }
+
+            // Lógica para Postulantes (Reclutamiento)
+            foreach ($ids as $id) {
+                $postulante = Postulante::findOrFail($id);
+                
+                $postulante->update([
+                    'grupo_id' => $grupo->id,
+                    'estado_proceso' => 'capacitacion'
+                ]);
+
+                ProcesoSeleccion::updateOrCreate(
+                    [
+                        'postulante_id' => $postulante->id, 
+                        'etapa' => '1° Día de Capa'
+                    ],
+                    [
+                        'resultado' => 'pendiente', 
+                        'fecha_evaluacion' => $grupo->fecha_capacitacion
+                    ]
+                );
+            }
+            
+            return true;
+        });
+    }
+    
     public function asignarPostulantes(int $grupoId, array $postulanteIds)
     {
         return DB::transaction(function () use ($grupoId, $postulanteIds) {
@@ -80,6 +140,11 @@ class GrupoCapacitacionService
     {
         $query = GrupoCapacitacion::query();
 
+        // Filtro por tipo (Módulo Pre-selección o Reclutamiento)
+        if (!empty($filtros['tipo'])) {
+            $query->where('tipo', $filtros['tipo']);
+        }
+
         // Filtro por Área
         if (!empty($filtros['area_general'])) {
             $query->where('area_general', $filtros['area_general']);
@@ -103,6 +168,20 @@ class GrupoCapacitacionService
         $grupo = GrupoCapacitacion::findOrFail($id);
         $grupo->update($datos);
         return $grupo;
+    }
+
+    public function desvincularCandidato($grupoId, $usuarioId, $tipo)
+    {
+        // Determinamos el modelo basado en el tipo
+        if ($tipo === 'preseleccion') {
+            return \App\Models\PreSeleccion::where('id', $usuarioId)
+                ->where('grupo_id', $grupoId)
+                ->update(['grupo_id' => null]);
+        }
+
+        return \App\Models\Postulante::where('id', $usuarioId)
+            ->where('grupo_id', $grupoId)
+            ->update(['grupo_id' => null]);
     }
 
     public function eliminarGrupo($id)

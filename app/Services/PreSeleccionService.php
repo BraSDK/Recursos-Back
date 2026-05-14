@@ -12,11 +12,18 @@ class PreSeleccionService
         return PreSeleccion::with(['puesto.departamento'])->latest()->get();
     }
 
-    public function getPaginado($estado = 'pendiente', $search = null)
+    public function getPaginado($estado = 'pendiente', $search = null, $grupoId = null)
     {
+        // 1. Iniciamos la consulta con las relaciones necesarias
         $query = PreSeleccion::with(['puesto.departamento'])
             ->where('estado', $estado);
 
+        // 2. NUEVO: Filtro por Grupo (Crítico para el CapacitacionDrawer)
+        if ($grupoId) {
+            $query->where('grupo_id', $grupoId);
+        }
+
+        // 3. Filtro de búsqueda por DNI o Nombre
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('dni', 'LIKE', "%{$search}%")
@@ -24,7 +31,7 @@ class PreSeleccionService
             });
         }
 
-        // Paginamos de 10 en 10. Laravel se encarga de leer el parámetro 'page' de la URL
+        // 4. Ordenamos por los más recientes y paginamos
         return $query->latest()->paginate(10);
     }
 
@@ -56,10 +63,32 @@ class PreSeleccionService
 
     public function verificarDniPendiente($dni)
     {
-        return PreSeleccion::with(['puesto.departamento'])
+        // 1. Buscamos el registro en la base de datos
+        $pre = PreSeleccion::with(['puesto.departamento'])
             ->where('dni', $dni)
             ->where('estado', 'pendiente')
             ->first();
+
+        // 2. Si no existe, devolvemos null para que el controlador lance el 404
+        if (!$pre) {
+            return null;
+        }
+
+        // 3. Si existe, aplicamos la lógica de formateo (Data Transfer Object)
+        // Solo devolvemos lo estrictamente necesario por seguridad.
+        return [
+            'dni' => $pre->dni,
+            'nombre_completo' => $pre->nombre_completo,
+            'puesto_id' => $pre->puesto_id,
+            'puesto' => [
+                'id' => $pre->puesto->id,
+                'nombre_puesto' => $pre->puesto->nombre_puesto,
+                'departamento_id' => $pre->puesto->departamento_id,
+                'departamento' => [
+                    'area_general' => $pre->puesto->departamento->area_general
+                ]
+            ]
+        ];
     }
 
     public function deletePreSeleccion($id)

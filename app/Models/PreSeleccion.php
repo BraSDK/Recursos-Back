@@ -11,6 +11,7 @@ class PreSeleccion extends Model
 
     protected $fillable = [
         'dni',
+        'grupo_id',
         'nombre_completo',
         'puesto_id',
         'estado',

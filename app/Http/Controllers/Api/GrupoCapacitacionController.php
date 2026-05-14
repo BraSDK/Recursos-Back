@@ -19,7 +19,7 @@ class GrupoCapacitacionController extends Controller
     public function index(Request $request)
     {
         // Obtenemos los filtros del request
-        $filtros = $request->only(['area_general', 'fecha', 'estado']);
+        $filtros = $request->only(['area_general', 'fecha', 'estado', 'tipo']);
     
         return response()->json($this->grupoCapacitacionService->getGruposFiltrados($filtros));
     }
@@ -35,6 +35,7 @@ class GrupoCapacitacionController extends Controller
         $validated = $request->validate([
             'nombre_grupo' => 'required|string|max:100',
             'area_general' => 'required|in:ventas,operaciones,administracion',
+            'tipo'         => 'required|in:postulante,preseleccion',
             'fecha_capacitacion' => 'required|date',
             'hora_capacitacion' => 'required',
         ]);
@@ -45,15 +46,32 @@ class GrupoCapacitacionController extends Controller
 
     public function asignar(Request $request)
     {
-        $validated = $request->validate([
-            'grupo_id' => 'required|exists:grupos_capacitacion,id',
-            'postulante_ids' => 'required|array',
-            'postulante_ids.*' => 'exists:postulantes,id',
+        $request->validate([
+            'grupo_id' => 'required|integer|exists:grupos_capacitacion,id',
+            'ids'      => 'required|array|min:1',
+            'tipo'     => 'required|in:postulante,preseleccion'
         ]);
-
-        $this->grupoCapacitacionService->asignarPostulantes($validated['grupo_id'], $validated['postulante_ids']);
-
-        return response()->json(['message' => 'Grupo asignado con éxito']);
+    
+        $tablaDestino = ($request->tipo === 'preseleccion') ? 'pre_selecciones' : 'postulantes';
+        
+        $request->validate([
+            'ids.*' => "required|integer|exists:{$tablaDestino},id"
+        ]);
+    
+        try {
+            $this->grupoCapacitacionService->asignarMasivo(
+                (int)$request->grupo_id, 
+                $request->ids, 
+                $request->tipo
+            );
+    
+            return response()->json(['message' => 'Asignación completada con éxito']);
+        } catch (\InvalidArgumentException $e) {
+            // Corregido: usamos ->getMessage() o un string directo
+            return response()->json(['message' => 'El tipo de grupo no coincide con los candidatos'], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error interno en el servidor'], 500);
+        }
     }
 
     /**
@@ -61,7 +79,13 @@ class GrupoCapacitacionController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            $grupoData = $this->grupoCapacitacionService->obtenerGrupoConPostulantes($id);
+            return response()->json($grupoData);
+        } catch (\Exception $e) {
+            // Esto te ayudará a ver el error real en la consola de red si vuelve a fallar
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -79,6 +103,28 @@ class GrupoCapacitacionController extends Controller
 
         $grupo = $this->grupoCapacitacionService->actualizarGrupo($id, $validated);
         return response()->json($grupo);
+    }
+
+    // En GrupoCapacitacionController.php
+
+    public function desvincularUsuario(Request $request, $grupoId)
+    {
+        $request->validate([
+            'usuario_id' => 'required|integer',
+            'tipo'       => 'required|in:postulante,preseleccion'
+        ]);
+
+        try {
+            $this->grupoCapacitacionService->desvincularCandidato(
+                $grupoId, 
+                $request->usuario_id, 
+                $request->tipo
+            );
+
+            return response()->json(['message' => 'Usuario desvinculado con éxito']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error al desvincular usuario'], 500);
+        }
     }
 
     /**
